@@ -27,3 +27,11 @@ This project demonstrates clean component separation, coordinate conversion logi
 - **OpenLayers** (map engine)
 - **Jest** (testing framework)
 - **CSS** (custom styling)
+
+## Instalasi
+
+- **Pastikan sudah instalasi node.js(versi 20+)**
+- **Clone Repository**
+- **Install Dependensi** (npm install)
+- **Jalankan Aplikasi Development** (npm run dev)
+- **Jalankan Unit Test** (npm test)
