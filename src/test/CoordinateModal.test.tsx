@@ -1,14 +1,40 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CoordinateModal from '../components/CoordinateModal';
 
+/**
+ * =====================================================
+ * Test Suite: CoordinateModal
+ * =====================================================
+ *
+ * Test ini memverifikasi:
+ * - Perilaku modal (open / close)
+ * - Pergantian format koordinat (DD ↔ DMS)
+ * - Input dan validasi koordinat
+ * - Konversi dan submit data ke parent component
+ */
+
 describe('CoordinateModal', () => {
+  /**
+   * Mock callback untuk menutup modal
+   */
   const mockOnClose = jest.fn();
+
+  /**
+   * Mock callback untuk menambahkan marker ke peta
+   */
   const mockOnAddMarker = jest.fn();
 
+  /**
+   * Reset semua mock sebelum setiap test
+   * agar tidak saling memengaruhi
+   */
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Modal tidak boleh dirender jika isOpen = false
+   */
   it('should not render when isOpen is false', () => {
     render(
       <CoordinateModal
@@ -18,9 +44,14 @@ describe('CoordinateModal', () => {
       />
     );
     
-    expect(screen.queryByText('Add Coordinate Marker')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Add Coordinate Marker')
+    ).not.toBeInTheDocument();
   });
 
+  /**
+   * Modal harus muncul jika isOpen = true
+   */
   it('should render when isOpen is true', () => {
     render(
       <CoordinateModal
@@ -30,9 +61,14 @@ describe('CoordinateModal', () => {
       />
     );
     
-    expect(screen.getByText('Add Coordinate Marker')).toBeInTheDocument();
+    expect(
+      screen.getByText('Add Coordinate Marker')
+    ).toBeInTheDocument();
   });
 
+  /**
+   * Klik tombol close harus memanggil onClose
+   */
   it('should close modal when close button is clicked', () => {
     render(
       <CoordinateModal
@@ -48,6 +84,10 @@ describe('CoordinateModal', () => {
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * User harus bisa berpindah format koordinat
+   * antara DD dan DMS
+   */
   it('should switch between DD and DMS formats', () => {
     render(
       <CoordinateModal
@@ -60,18 +100,21 @@ describe('CoordinateModal', () => {
     const dmsButton = screen.getByText('DMS Format');
     const ddButton = screen.getByText('DD Format');
     
-    // Initially DD should be active
+    // Secara default format DD aktif
     expect(ddButton).toHaveClass('active');
     
-    // Switch to DMS
+    // Berpindah ke DMS
     fireEvent.click(dmsButton);
     expect(dmsButton).toHaveClass('active');
     
-    // Switch back to DD
+    // Kembali ke DD
     fireEvent.click(ddButton);
     expect(ddButton).toHaveClass('active');
   });
 
+  /**
+   * Pastikan input DD tampil dengan benar
+   */
   it('should display DD format inputs correctly', () => {
     render(
       <CoordinateModal
@@ -81,12 +124,26 @@ describe('CoordinateModal', () => {
       />
     );
     
-    expect(screen.getByText('Latitude (Decimal Degrees)')).toBeInTheDocument();
-    expect(screen.getByText('Longitude (Decimal Degrees)')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('48.8575')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('2.3514')).toBeInTheDocument();
+    expect(
+      screen.getByText('Latitude (Decimal Degrees)')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('Longitude (Decimal Degrees)')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByPlaceholderText('48.8575')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByPlaceholderText('2.3514')
+    ).toBeInTheDocument();
   });
 
+  /**
+   * Pastikan input DMS tampil saat format diubah
+   */
   it('should display DMS format inputs correctly', () => {
     render(
       <CoordinateModal
@@ -96,15 +153,18 @@ describe('CoordinateModal', () => {
       />
     );
     
-    // Switch to DMS
-    const dmsButton = screen.getByText('DMS Format');
-    fireEvent.click(dmsButton);
+    // Ubah format ke DMS
+    fireEvent.click(screen.getByText('DMS Format'));
     
     expect(screen.getAllByText('Degrees').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Minutes').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Seconds').length).toBeGreaterThan(0);
   });
 
+  /**
+   * Submit koordinat DD harus mengirim nilai
+   * latitude dan longitude yang benar
+   */
   it('should submit DD coordinates correctly', async () => {
     render(
       <CoordinateModal
@@ -123,14 +183,16 @@ describe('CoordinateModal', () => {
     fireEvent.change(lonInput, { target: { value: '74.2973' } });
     fireEvent.change(lonSelect, { target: { value: 'W' } });
     
-    const submitButton = screen.getByText('Add Marker');
-    fireEvent.click(submitButton);
+    fireEvent.click(screen.getByText('Add Marker'));
     
     await waitFor(() => {
       expect(mockOnAddMarker).toHaveBeenCalledWith(4.5709, -74.2973);
     });
   });
 
+  /**
+   * Konversi DD ke DMS harus berpindah format
+   */
   it('should convert DD to DMS correctly', () => {
     render(
       <CoordinateModal
@@ -140,20 +202,25 @@ describe('CoordinateModal', () => {
       />
     );
     
-    const latInput = screen.getByPlaceholderText('48.8575');
-    const lonInput = screen.getByPlaceholderText('2.3514');
+    fireEvent.change(
+      screen.getByPlaceholderText('48.8575'),
+      { target: { value: '48.8575' } }
+    );
+
+    fireEvent.change(
+      screen.getByPlaceholderText('2.3514'),
+      { target: { value: '2.3514' } }
+    );
     
-    fireEvent.change(latInput, { target: { value: '48.8575' } });
-    fireEvent.change(lonInput, { target: { value: '2.3514' } });
+    fireEvent.click(screen.getByText(/Convert to DMS/i));
     
-    const convertButton = screen.getByText(/Convert to DMS/i);
-    fireEvent.click(convertButton);
-    
-    // Check if DMS format is now active
-    const dmsButton = screen.getByText('DMS Format');
-    expect(dmsButton).toHaveClass('active');
+    // Format DMS harus aktif
+    expect(screen.getByText('DMS Format')).toHaveClass('active');
   });
 
+  /**
+   * Tombol clear harus mengosongkan seluruh input
+   */
   it('should clear form when clear button is clicked', () => {
     render(
       <CoordinateModal
@@ -172,13 +239,15 @@ describe('CoordinateModal', () => {
     expect(latInput.value).toBe('4.5709');
     expect(lonInput.value).toBe('74.2973');
     
-    const clearButton = screen.getByText('Clear');
-    fireEvent.click(clearButton);
+    fireEvent.click(screen.getByText('Clear'));
     
     expect(latInput.value).toBe('');
     expect(lonInput.value).toBe('');
   });
 
+  /**
+   * Perubahan arah (N/S/E/W) harus tersimpan dengan benar
+   */
   it('should handle direction changes correctly', () => {
     render(
       <CoordinateModal
@@ -199,6 +268,9 @@ describe('CoordinateModal', () => {
     expect(lonSelect).toHaveValue('W');
   });
 
+  /**
+   * Form tidak boleh disubmit jika input wajib kosong
+   */
   it('should validate required fields', () => {
     render(
       <CoordinateModal
@@ -208,10 +280,8 @@ describe('CoordinateModal', () => {
       />
     );
     
-    const submitButton = screen.getByText('Add Marker');
-    fireEvent.click(submitButton);
+    fireEvent.click(screen.getByText('Add Marker'));
     
-    // Should not call onAddMarker if fields are empty
     expect(mockOnAddMarker).not.toHaveBeenCalled();
   });
 });

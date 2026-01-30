@@ -11,21 +11,56 @@ import { Feature } from "ol";
 import { fromLonLat } from "ol/proj";
 import { Style, Circle, Fill, Stroke } from "ol/style";
 
+/**
+ * Struktur data marker
+ * Menyimpan koordinat latitude dan longitude
+ */
 interface Marker {
+  /** Latitude dalam Decimal Degrees */
   lat: number;
+
+  /** Longitude dalam Decimal Degrees */
   lon: number;
 }
 
+/**
+ * Props untuk komponen OpenLayerMap
+ */
 interface OpenLayerMapProps {
+  /** Daftar marker yang akan ditampilkan pada peta */
   markers: Marker[];
 }
 
+/**
+ * Komponen peta berbasis OpenLayers
+ * Menampilkan marker berdasarkan koordinat latitude dan longitude
+ */
 const OpenLayerMap = ({ markers }: OpenLayerMapProps) => {
+  /**
+   * Referensi ke elemen DOM tempat peta OpenLayers dirender
+   */
   const mapElementRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Instance OpenLayers Map
+   */
   const [olMap, setOlMap] = useState<Map | null>(null);
+
+  /**
+   * Vector source untuk menyimpan feature marker
+   * Dibuat sekali dan dipertahankan sepanjang lifecycle komponen
+   */
   const [vectorSource] = useState(new VectorSource());
 
+  /**
+   * Effect untuk inisialisasi peta OpenLayers
+   * Akan dijalankan sekali saat komponen pertama kali dirender
+   */
   useEffect(() => {
+    /**
+     * Layer vektor untuk marker
+     * Menggunakan Circle style sebagai simbol marker
+     */
     const vectorLayer = new VectorLayer({
       source: vectorSource,
       style: new Style({
@@ -37,9 +72,15 @@ const OpenLayerMap = ({ markers }: OpenLayerMapProps) => {
       }),
     });
 
+    /**
+     * Inisialisasi instance Map OpenLayers
+     */
     const map = new Map({
       target: mapElementRef.current as HTMLElement,
       layers: [
+        /**
+         * Base layer menggunakan OpenStreetMap
+         */
         new TileLayer({
           source: new OSM(),
         }),
@@ -51,30 +92,57 @@ const OpenLayerMap = ({ markers }: OpenLayerMapProps) => {
       }),
     });
 
+    /**
+     * Simpan instance map ke state
+     */
     setOlMap(map);
 
+    /**
+     * Cleanup saat komponen di-unmount
+     * Melepas target map dari DOM
+     */
     return () => {
       map.setTarget(undefined);
     };
   }, [vectorSource]);
 
+  /**
+   * Effect untuk memperbarui marker pada peta
+   * Akan dijalankan setiap kali data markers berubah
+   */
   useEffect(() => {
     if (olMap && markers.length > 0) {
-      // Clear existing markers
+      /**
+       * Menghapus marker lama sebelum menambahkan marker baru
+       */
       vectorSource.clear();
 
-      // Add new markers
+      /**
+       * Menambahkan marker baru ke vector source
+       */
       markers.forEach((marker) => {
+        /**
+         * Konversi koordinat lon/lat ke sistem proyeksi peta
+         */
         const coordinate = fromLonLat([marker.lon, marker.lat]);
+
+        /**
+         * Membuat feature point untuk marker
+         */
         const feature = new Feature({
           geometry: new Point(coordinate),
         });
+
         vectorSource.addFeature(feature);
       });
 
-      // Center map on the last marker
+      /**
+       * Memusatkan peta ke marker terakhir
+       * dengan animasi zoom
+       */
       const lastMarker = markers[markers.length - 1];
       const lastCoordinate = fromLonLat([lastMarker.lon, lastMarker.lat]);
+
       olMap.getView().animate({
         center: lastCoordinate,
         zoom: 12,
@@ -83,7 +151,17 @@ const OpenLayerMap = ({ markers }: OpenLayerMapProps) => {
     }
   }, [markers, olMap, vectorSource]);
 
-  return <div ref={mapElementRef} className="map" style={{ width: '100%', height: '100%' }}></div>;
+  /**
+   * Elemen container peta
+   * Ukuran peta mengikuti parent container
+   */
+  return (
+    <div
+      ref={mapElementRef}
+      className="map"
+      style={{ width: '100%', height: '100%' }}
+    />
+  );
 };
 
 export default OpenLayerMap;

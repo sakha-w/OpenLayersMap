@@ -1,5 +1,30 @@
+/**
+ * =====================================================
+ * Test Suite: Coordinate Conversion Functions
+ * =====================================================
+ *
+ * Test ini memverifikasi akurasi konversi koordinat:
+ * - DMS (Degrees, Minutes, Seconds)
+ * - DD (Decimal Degrees)
+ *
+ * Fokus utama:
+ * 1. Ketepatan perhitungan matematis
+ * 2. Penanganan arah koordinat (N, S, E, W)
+ * 3. Konsistensi konversi bolak-balik (round-trip)
+ * 4. Validasi menggunakan koordinat dunia nyata
+ */
+
 describe('Coordinate Conversion Functions', () => {
-  // DMS to DD conversion function
+
+  /**
+   * Mengonversi koordinat dari DMS ke Decimal Degrees (DD)
+   *
+   * @param degrees Derajat
+   * @param minutes Menit
+   * @param seconds Detik
+   * @param direction Arah koordinat (N, S, E, W)
+   * @returns Nilai koordinat dalam Decimal Degrees
+   */
   const dmsToDD = (
     degrees: number,
     minutes: number,
@@ -7,13 +32,22 @@ describe('Coordinate Conversion Functions', () => {
     direction: 'N' | 'S' | 'E' | 'W'
   ): number => {
     let dd = degrees + minutes / 60 + seconds / 3600;
+
+    // Arah Selatan dan Barat direpresentasikan dengan nilai negatif
     if (direction === 'S' || direction === 'W') {
       dd = dd * -1;
     }
+
     return dd;
   };
 
-  // DD to DMS conversion function
+  /**
+   * Mengonversi koordinat dari Decimal Degrees (DD) ke DMS
+   *
+   * @param dd Nilai koordinat dalam Decimal Degrees
+   * @param isLatitude Menentukan apakah koordinat latitude atau longitude
+   * @returns Objek DMS (degrees, minutes, seconds, direction)
+   */
   const ddToDMS = (dd: number, isLatitude: boolean) => {
     const absolute = Math.abs(dd);
     const degrees = Math.floor(absolute);
@@ -22,6 +56,8 @@ describe('Coordinate Conversion Functions', () => {
     const seconds = (minutesDecimal - minutes) * 60;
 
     let direction: 'N' | 'S' | 'E' | 'W';
+
+    // Penentuan arah berdasarkan jenis koordinat
     if (isLatitude) {
       direction = dd >= 0 ? 'N' : 'S';
     } else {
@@ -31,39 +67,58 @@ describe('Coordinate Conversion Functions', () => {
     return { degrees, minutes, seconds, direction };
   };
 
+  /**
+   * =====================================================
+   * Test: dmsToDD
+   * =====================================================
+   */
   describe('dmsToDD', () => {
+
+    /** Konversi latitude utara */
     it('should convert DMS to DD for North latitude', () => {
       const result = dmsToDD(48, 51, 27, 'N');
       expect(result).toBeCloseTo(48.8575, 4);
     });
 
+    /** Konversi latitude selatan (negatif) */
     it('should convert DMS to DD for South latitude', () => {
       const result = dmsToDD(33, 52, 10, 'S');
       expect(result).toBeCloseTo(-33.8694, 4);
     });
 
+    /** Konversi longitude timur */
     it('should convert DMS to DD for East longitude', () => {
       const result = dmsToDD(2, 21, 5, 'E');
       expect(result).toBeCloseTo(2.3514, 4);
     });
 
+    /** Konversi longitude barat (negatif) */
     it('should convert DMS to DD for West longitude', () => {
       const result = dmsToDD(74, 17, 50, 'W');
       expect(result).toBeCloseTo(-74.2972, 3);
     });
 
+    /** Kasus nilai nol */
     it('should handle zero values', () => {
       const result = dmsToDD(0, 0, 0, 'N');
       expect(result).toBe(0);
     });
 
+    /** Kasus hanya menit dan detik */
     it('should handle minutes and seconds only', () => {
       const result = dmsToDD(0, 30, 30, 'N');
       expect(result).toBeCloseTo(0.5083, 4);
     });
   });
 
+  /**
+   * =====================================================
+   * Test: ddToDMS
+   * =====================================================
+   */
   describe('ddToDMS', () => {
+
+    /** Latitude positif */
     it('should convert DD to DMS for positive latitude', () => {
       const result = ddToDMS(48.8575, true);
       expect(result.degrees).toBe(48);
@@ -72,6 +127,7 @@ describe('Coordinate Conversion Functions', () => {
       expect(result.direction).toBe('N');
     });
 
+    /** Latitude negatif */
     it('should convert DD to DMS for negative latitude', () => {
       const result = ddToDMS(-33.8694, true);
       expect(result.degrees).toBe(33);
@@ -80,6 +136,7 @@ describe('Coordinate Conversion Functions', () => {
       expect(result.direction).toBe('S');
     });
 
+    /** Longitude positif */
     it('should convert DD to DMS for positive longitude', () => {
       const result = ddToDMS(2.3514, false);
       expect(result.degrees).toBe(2);
@@ -88,6 +145,7 @@ describe('Coordinate Conversion Functions', () => {
       expect(result.direction).toBe('E');
     });
 
+    /** Longitude negatif */
     it('should convert DD to DMS for negative longitude', () => {
       const result = ddToDMS(-74.2973, false);
       expect(result.degrees).toBe(74);
@@ -96,6 +154,7 @@ describe('Coordinate Conversion Functions', () => {
       expect(result.direction).toBe('W');
     });
 
+    /** Nilai nol default ke arah Utara */
     it('should handle zero value', () => {
       const result = ddToDMS(0, true);
       expect(result.degrees).toBe(0);
@@ -105,11 +164,31 @@ describe('Coordinate Conversion Functions', () => {
     });
   });
 
+  /**
+   * =====================================================
+   * Test: Round-trip Conversion
+   * =====================================================
+   *
+   * Memastikan konversi bolak-balik tidak
+   * menghasilkan deviasi signifikan
+   */
   describe('Round-trip conversion', () => {
+
     it('should convert DMS to DD and back to DMS accurately', () => {
-      const originalDMS = { degrees: 48, minutes: 51, seconds: 27, direction: 'N' as const };
+      const originalDMS = {
+        degrees: 48,
+        minutes: 51,
+        seconds: 27,
+        direction: 'N' as const,
+      };
       
-      const dd = dmsToDD(originalDMS.degrees, originalDMS.minutes, originalDMS.seconds, originalDMS.direction);
+      const dd = dmsToDD(
+        originalDMS.degrees,
+        originalDMS.minutes,
+        originalDMS.seconds,
+        originalDMS.direction
+      );
+
       const convertedDMS = ddToDMS(dd, true);
       
       expect(convertedDMS.degrees).toBe(originalDMS.degrees);
@@ -122,13 +201,27 @@ describe('Coordinate Conversion Functions', () => {
       const originalDD = 48.8575;
       
       const dms = ddToDMS(originalDD, true);
-      const convertedDD = dmsToDD(dms.degrees, dms.minutes, dms.seconds, dms.direction);
+      const convertedDD = dmsToDD(
+        dms.degrees,
+        dms.minutes,
+        dms.seconds,
+        dms.direction
+      );
       
       expect(convertedDD).toBeCloseTo(originalDD, 4);
     });
   });
 
+  /**
+   * =====================================================
+   * Test: Real-world Coordinates
+   * =====================================================
+   *
+   * Menggunakan koordinat dunia nyata
+   * untuk memastikan fungsi akurat secara praktis
+   */
   describe('Real-world coordinates', () => {
+
     it('should handle Paris coordinates correctly', () => {
       // Paris: 48.8566° N, 2.3522° E
       const lat = dmsToDD(48, 51, 24, 'N');

@@ -1,41 +1,85 @@
 import { useState } from 'react';
 import './CoordinateModal.css';
 
-
+/**
+ * Props untuk komponen CoordinateModal
+ */
 interface CoordinateModalProps {
+  /** Menentukan apakah modal ditampilkan */
   isOpen: boolean;
+
+  /** Callback untuk menutup modal */
   onClose: () => void;
+
+  /**
+   * Callback saat marker ditambahkan
+   * @param lat Latitude dalam Decimal Degrees
+   * @param lon Longitude dalam Decimal Degrees
+   */
   onAddMarker: (lat: number, lon: number) => void;
 }
 
+/**
+ * Struktur data koordinat dalam format DMS
+ */
 interface DMSCoordinate {
+  /** Derajat */
   degrees: number;
+
+  /** Menit */
   minutes: number;
+
+  /** Detik */
   seconds: number;
+
+  /** Arah koordinat */
   direction: 'N' | 'S' | 'E' | 'W';
 }
 
+/**
+ * Modal untuk menambahkan marker koordinat
+ * Mendukung format DD (Decimal Degrees) dan DMS (Degrees Minutes Seconds)
+ */
 const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps) => {
+  /**
+   * Menyimpan tipe koordinat yang sedang digunakan
+   * DD  = Decimal Degrees
+   * DMS = Degrees Minutes Seconds
+   */
   const [coordinateType, setCoordinateType] = useState<'DD' | 'DMS'>('DD');
   
-  // DD inputs
+  /** Input latitude dalam format Decimal Degrees */
   const [latDD, setLatDD] = useState('');
+
+  /** Input longitude dalam format Decimal Degrees */
   const [lonDD, setLonDD] = useState('');
   
-  // DMS inputs for Latitude
+  /** Input DMS Latitude */
   const [latDegrees, setLatDegrees] = useState('');
   const [latMinutes, setLatMinutes] = useState('');
   const [latSeconds, setLatSeconds] = useState('');
   const [latDirection, setLatDirection] = useState<'N' | 'S'>('N');
   
-  // DMS inputs for Longitude
+  /** Input DMS Longitude */
   const [lonDegrees, setLonDegrees] = useState('');
   const [lonMinutes, setLonMinutes] = useState('');
   const [lonSeconds, setLonSeconds] = useState('');
   const [lonDirection, setLonDirection] = useState<'E' | 'W'>('E');
 
-  // Convert DMS to DD
-  const dmsToDD = (degrees: number, minutes: number, seconds: number, direction: 'N' | 'S' | 'E' | 'W'): number => {
+  /**
+   * Mengonversi koordinat dari format DMS ke Decimal Degrees
+   * @param degrees Derajat
+   * @param minutes Menit
+   * @param seconds Detik
+   * @param direction Arah koordinat (N, S, E, W)
+   * @returns Nilai koordinat dalam Decimal Degrees
+   */
+  const dmsToDD = (
+    degrees: number,
+    minutes: number,
+    seconds: number,
+    direction: 'N' | 'S' | 'E' | 'W'
+  ): number => {
     let dd = degrees + minutes / 60 + seconds / 3600;
     if (direction === 'S' || direction === 'W') {
       dd = dd * -1;
@@ -43,7 +87,12 @@ const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps)
     return dd;
   };
 
-  // Convert DD to DMS
+  /**
+   * Mengonversi koordinat dari Decimal Degrees ke DMS
+   * @param dd Nilai Decimal Degrees
+   * @param isLatitude Menentukan apakah koordinat latitude atau longitude
+   * @returns Objek koordinat DMS
+   */
   const ddToDMS = (dd: number, isLatitude: boolean): DMSCoordinate => {
     const absolute = Math.abs(dd);
     const degrees = Math.floor(absolute);
@@ -61,7 +110,11 @@ const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps)
     return { degrees, minutes, seconds, direction };
   };
 
-  // Convert from DMS to DD
+  /**
+   * Handler konversi dari format DMS ke DD
+   * Nilai DD akan disimpan tanpa tanda negatif,
+   * arah ditentukan oleh field direction
+   */
   const handleConvertDMSToDD = () => {
     const latDeg = parseFloat(latDegrees) || 0;
     const latMin = parseFloat(latMinutes) || 0;
@@ -73,30 +126,22 @@ const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps)
     const lat = dmsToDD(latDeg, latMin, latSec, latDirection);
     const lon = dmsToDD(lonDeg, lonMin, lonSec, lonDirection);
 
-    // Store as positive values in DD, direction handles the sign
     setLatDD(Math.abs(lat).toFixed(6));
     setLonDD(Math.abs(lon).toFixed(6));
     setCoordinateType('DD');
   };
 
-  // Convert from DD to DMS
+  /**
+   * Handler konversi dari format DD ke DMS
+   * Arah koordinat akan ditentukan berdasarkan nilai positif/negatif
+   */
   const handleConvertDDToDMS = () => {
     let lat = parseFloat(latDD);
     let lon = parseFloat(lonDD);
 
     if (!isNaN(lat) && !isNaN(lon)) {
-      // Apply direction to DD values before conversion
-      if (latDirection === 'S' && lat > 0) {
-        lat = lat * -1;
-      } else if (latDirection === 'N' && lat < 0) {
-        lat = Math.abs(lat);
-      }
-      
-      if (lonDirection === 'W' && lon > 0) {
-        lon = lon * -1;
-      } else if (lonDirection === 'E' && lon < 0) {
-        lon = Math.abs(lon);
-      }
+      if (latDirection === 'S' && lat > 0) lat = lat * -1;
+      if (lonDirection === 'W' && lon > 0) lon = lon * -1;
 
       const latDMS = ddToDMS(lat, true);
       const lonDMS = ddToDMS(lon, false);
@@ -115,6 +160,11 @@ const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps)
     }
   };
 
+  /**
+   * Handler submit form
+   * Menghitung nilai akhir latitude & longitude
+   * lalu memanggil callback onAddMarker
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -123,29 +173,22 @@ const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps)
     if (coordinateType === 'DD') {
       lat = parseFloat(latDD);
       lon = parseFloat(lonDD);
-      
-      // Apply direction to DD values
-      if (latDirection === 'S' && lat > 0) {
-        lat = lat * -1;
-      } else if (latDirection === 'N' && lat < 0) {
-        lat = Math.abs(lat);
-      }
-      
-      if (lonDirection === 'W' && lon > 0) {
-        lon = lon * -1;
-      } else if (lonDirection === 'E' && lon < 0) {
-        lon = Math.abs(lon);
-      }
-    } else {
-      const latDeg = parseFloat(latDegrees) || 0;
-      const latMin = parseFloat(latMinutes) || 0;
-      const latSec = parseFloat(latSeconds) || 0;
-      const lonDeg = parseFloat(lonDegrees) || 0;
-      const lonMin = parseFloat(lonMinutes) || 0;
-      const lonSec = parseFloat(lonSeconds) || 0;
 
-      lat = dmsToDD(latDeg, latMin, latSec, latDirection);
-      lon = dmsToDD(lonDeg, lonMin, lonSec, lonDirection);
+      if (latDirection === 'S' && lat > 0) lat = lat * -1;
+      if (lonDirection === 'W' && lon > 0) lon = lon * -1;
+    } else {
+      lat = dmsToDD(
+        parseFloat(latDegrees) || 0,
+        parseFloat(latMinutes) || 0,
+        parseFloat(latSeconds) || 0,
+        latDirection
+      );
+      lon = dmsToDD(
+        parseFloat(lonDegrees) || 0,
+        parseFloat(lonMinutes) || 0,
+        parseFloat(lonSeconds) || 0,
+        lonDirection
+      );
     }
 
     if (!isNaN(lat) && !isNaN(lon)) {
@@ -157,6 +200,9 @@ const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps)
     }
   };
 
+  /**
+   * Mengosongkan seluruh input koordinat
+   */
   const handleClear = () => {
     setLatDD('');
     setLonDD('');
@@ -168,6 +214,7 @@ const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps)
     setLonSeconds('');
   };
 
+  /** Jangan render modal jika isOpen = false */
   if (!isOpen) return null;
 
   return (
