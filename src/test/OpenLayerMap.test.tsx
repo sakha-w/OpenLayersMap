@@ -23,6 +23,7 @@ import OpenLayerMap from '../components/OpenLayerMap';
  * Digunakan untuk mencegah error saat:
  * - setTarget()
  * - getView().animate()
+ * - on() untuk event listener
  */
 jest.mock('ol/Map', () => {
   return jest.fn().mockImplementation(() => ({
@@ -30,6 +31,7 @@ jest.mock('ol/Map', () => {
     getView: jest.fn(() => ({
       animate: jest.fn(),
     })),
+    on: jest.fn(),
   }));
 });
 
@@ -90,10 +92,11 @@ jest.mock('ol/geom', () => ({
 
 /**
  * Mock fungsi proyeksi koordinat
- * fromLonLat dikembalikan apa adanya
+ * fromLonLat dan toLonLat dikembalikan apa adanya
  */
 jest.mock('ol/proj', () => ({
   fromLonLat: jest.fn((coords) => coords),
+  toLonLat: jest.fn((coords) => coords),
 }));
 
 /**
