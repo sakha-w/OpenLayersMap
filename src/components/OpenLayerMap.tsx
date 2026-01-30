@@ -8,7 +8,7 @@ import View from "ol/View";
 import Map from "ol/Map";
 import { Point } from "ol/geom";
 import { Feature } from "ol";
-import { fromLonLat } from "ol/proj";
+import { fromLonLat, toLonLat } from "ol/proj";
 import { Style, Circle, Fill, Stroke } from "ol/style";
 
 /**
@@ -29,13 +29,16 @@ interface Marker {
 interface OpenLayerMapProps {
   /** Daftar marker yang akan ditampilkan pada peta */
   markers: Marker[];
+  
+  /** Callback saat peta diklik, mengembalikan koordinat lat/lon */
+  onMapClick?: (lat: number, lon: number) => void;
 }
 
 /**
  * Komponen peta berbasis OpenLayers
  * Menampilkan marker berdasarkan koordinat latitude dan longitude
  */
-const OpenLayerMap = ({ markers }: OpenLayerMapProps) => {
+const OpenLayerMap = ({ markers, onMapClick }: OpenLayerMapProps) => {
   /**
    * Referensi ke elemen DOM tempat peta OpenLayers dirender
    */
@@ -98,13 +101,25 @@ const OpenLayerMap = ({ markers }: OpenLayerMapProps) => {
     setOlMap(map);
 
     /**
+     * Event listener untuk mendeteksi klik pada peta
+     * Mengkonversi koordinat klik ke lon/lat dan memanggil callback
+     */
+    map.on('click', (event) => {
+      if (onMapClick) {
+        const coordinate = event.coordinate;
+        const [lon, lat] = toLonLat(coordinate);
+        onMapClick(lat, lon);
+      }
+    });
+
+    /**
      * Cleanup saat komponen di-unmount
      * Melepas target map dari DOM
      */
     return () => {
       map.setTarget(undefined);
     };
-  }, [vectorSource]);
+  }, [vectorSource, onMapClick]);
 
   /**
    * Effect untuk memperbarui marker pada peta

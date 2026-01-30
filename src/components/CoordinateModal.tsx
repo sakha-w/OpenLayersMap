@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './CoordinateModal.css';
 
 /**
@@ -17,6 +17,12 @@ interface CoordinateModalProps {
    * @param lon Longitude dalam Decimal Degrees
    */
   onAddMarker: (lat: number, lon: number) => void;
+  
+  /** Koordinat awal latitude (opsional) */
+  initialLat?: number;
+  
+  /** Koordinat awal longitude (opsional) */
+  initialLon?: number;
 }
 
 /**
@@ -40,7 +46,7 @@ interface DMSCoordinate {
  * Modal untuk menambahkan marker koordinat
  * Mendukung format DD (Decimal Degrees) dan DMS (Degrees Minutes Seconds)
  */
-const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps) => {
+const CoordinateModal = ({ isOpen, onClose, onAddMarker, initialLat, initialLon }: CoordinateModalProps) => {
   /**
    * Menyimpan tipe koordinat yang sedang digunakan
    * DD  = Decimal Degrees
@@ -65,6 +71,24 @@ const CoordinateModal = ({ isOpen, onClose, onAddMarker }: CoordinateModalProps)
   const [lonMinutes, setLonMinutes] = useState('');
   const [lonSeconds, setLonSeconds] = useState('');
   const [lonDirection, setLonDirection] = useState<'E' | 'W'>('E');
+
+  /**
+   * Effect untuk mengisi nilai awal koordinat saat modal dibuka dengan koordinat dari klik peta
+   */
+  useEffect(() => {
+    if (isOpen && initialLat !== undefined && initialLon !== undefined) {
+      // Set nilai DD
+      setLatDD(Math.abs(initialLat).toFixed(6));
+      setLonDD(Math.abs(initialLon).toFixed(6));
+      
+      // Set direction
+      setLatDirection(initialLat >= 0 ? 'N' : 'S');
+      setLonDirection(initialLon >= 0 ? 'E' : 'W');
+      
+      // Set coordinate type to DD
+      setCoordinateType('DD');
+    }
+  }, [isOpen, initialLat, initialLon]);
 
   /**
    * Mengonversi koordinat dari format DMS ke Decimal Degrees

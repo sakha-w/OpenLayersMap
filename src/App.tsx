@@ -29,7 +29,21 @@ function App() {
    * State untuk menyimpan daftar marker yang ditampilkan di peta
    */
   const [markers, setMarkers] = useState<Marker[]>([]);
+  
+  /**
+   * State untuk menyimpan koordinat dari klik peta
+   */
+  const [clickedCoordinate, setClickedCoordinate] = useState<{ lat: number; lon: number } | null>(null);
 
+  /**
+   * Handler saat peta diklik
+   * Membuka modal dan mengisi koordinat awal
+   */
+  const handleMapClick = (lat: number, lon: number) => {
+    setClickedCoordinate({ lat, lon });
+    setIsModalOpen(true);
+  };
+  
   /**
    * Handler untuk menambahkan marker baru ke state
    * @param lat Latitude dalam Decimal Degrees
@@ -38,6 +52,15 @@ function App() {
   const handleAddMarker = (lat: number, lon: number) => {
     setMarkers([...markers, { lat, lon }]);
   };
+  
+  /**
+   * Handler untuk menutup modal
+   * Reset clicked coordinate saat modal ditutup
+   */
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setClickedCoordinate(null);
+  };
 
   return (
     /**
@@ -45,8 +68,8 @@ function App() {
      * Mengisi seluruh viewport browser
      */
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      {/* Komponen peta OpenLayers */}
-      <OpenLayerMap markers={markers} />
+      {/* Komponen peta OpenLayers dengan handler klik */}
+      <OpenLayerMap markers={markers} onMapClick={handleMapClick} />
       
       {/* Tombol untuk membuka modal input koordinat */}
       <button
@@ -71,11 +94,13 @@ function App() {
         Add Coordinate
       </button>
 
-      {/* Modal input koordinat */}
+      {/* Modal input koordinat dengan koordinat awal dari klik peta */}
       <CoordinateModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onAddMarker={handleAddMarker}
+        initialLat={clickedCoordinate?.lat}
+        initialLon={clickedCoordinate?.lon}
       />
     </div>
   );
